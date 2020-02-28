@@ -1,0 +1,5 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.pythonPath": "/Users/joelt/Documents/cmput404/CMPUT404-assignment-ajax/venv/bin/python3.7"
+}
