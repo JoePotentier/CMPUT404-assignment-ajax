@@ -26,32 +26,48 @@
       style="-webkit-tap-highlight-color: transparent;"
     ></canvas>
     <script>
+      const randomId = uuidv4();
+      const pendingAjax = [];
       var canvas = document.getElementById("c");
       var host = window.location.host;
       var context = canvas.getContext("2d");
       var W = (canvas.width = window.innerWidth - 6);
       var H = (canvas.height = window.innerHeight - 50);
 
-      function sendJSONXMLHTTPRequest(url, objects, callback) {
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-          if (xhr.readyState == 4) {
-            try {
-              if (xhr.status == 200) {
-                //XXX: parse some JSON from the request!
-                //XXX: Pass the data to the callback!
-              }
-            } catch (e) {
-              alert("Error: " + e.name);
-            }
+      async function sendJSONXMLHTTPRequest(method, url, objects, callback) {
+        try {
+          let res;
+          if (method.toUpperCase() == "GET") {
+            res = await fetch(location.origin + url);
+          } else {
+            res = await fetch(location.origin + url, {
+              method,
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(objects)
+            });
           }
-        };
-        //XXX: POST to a URL
-        //XXX: set the mimetype and the accept headers!
-        // Remember to use application/json !
+          callback(res);
+        } catch (e) {
+          console.log(e);
+          callback(e);
+        }
       }
 
       world = {};
+      sendJSONXMLHTTPRequest("GET", "/world", {}, res => {
+        res.json().then(data => {
+          Object.keys(data).forEach(entity => {
+            world[entity] = data[entity];
+          });
+          //drawFrame();
+        });
+      });
+
+      sendJSONXMLHTTPRequest("POST", "/subscriber/" + randomId, {}, res => {
+        //console.log(res);
+      });
 
       //XXX: TODO Make this prettier!
       function drawCircle(context, entity) {
@@ -139,8 +155,9 @@
 
       function addEntity(entity, data) {
         world[entity] = data;
-        drawNextFrame(); // (but should we?)
-        console.log(entity);
+        drawFrame();
+        //drawNextFrame(); // (but should we?)
+        pendingAjax.push([entity, data]);
         //XXX: Send a XHTML Request that updates the entity you just  modified!
       }
 
@@ -250,24 +267,66 @@
       // Add the application specific mouse listeners!
       //XXX: TODO Make these prettier!
       mouse.mousedowners.push(function(x, y, clicked, e) {
-        addEntityWithoutName({ x: x, y: y, colour: "blue" });
+        addEntityWithoutName({ x: x, y: y, colour: "white" }); // blue
       });
 
       mouse.mouseuppers.push(function(x, y, clicked, e) {
-        addEntityWithoutName({ x: x, y: y, colour: "red" });
+        addEntityWithoutName({ x: x, y: y, colour: "white" }); // red
       });
 
       mouse.mousedraggers.push(function(x, y, clicked, e) {
-        addEntityWithoutName({ x: x, y: y, colour: "green", radius: 10 });
+        // Colour code curtesy of Dimitry K - https://www.paulirish.com/2009/random-hex-color-code-snippets/
+        colour = colour =
+          "#" +
+          (
+            "000000" +
+            Math.random()
+              .toString(16)
+              .slice(2, 8)
+              .toUpperCase()
+          ).slice(-6);
+        addEntityWithoutName({ x: x, y: y, colour, radius: 10 });
       });
 
       function update() {
-        //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
-        drawFrame();
+        sendJSONXMLHTTPRequest("GET", "/subscriber/" + randomId, {}, res => {
+          res.json().then(data => {
+            Object.keys(data).forEach(entity => {
+              console.log(world);
+              world[entity] = data[entity];
+            });
+            drawNextFrame();
+            drawFrame();
+          });
+        });
+      }
+
+      function sendIt() {
+        if (pendingAjax.length) {
+          drawNextFrame();
+          let [entity, data] = pendingAjax.shift();
+          if (entity && data) {
+            sendJSONXMLHTTPRequest("PUT", "/entity/" + entity, data, res => {
+              //drawFrame();
+            });
+          }
+        }
       }
 
       // 30 frames per second
+      //setInterval(update, 1000 / 30.0);
       setInterval(update, 1000 / 30.0);
+      setInterval(sendIt, 1000 / 100.0);
+      // Broofa - Stackoverflow - https://stackoverflow.com/a/2117523
+      function uuidv4() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(
+          c
+        ) {
+          var r = (Math.random() * 16) | 0,
+            v = c == "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+      }
     </script>
   </body>
 </html>

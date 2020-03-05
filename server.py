@@ -45,15 +45,37 @@ class World:
 
     def set(self, entity, data):
         self.space[entity] = data
+        self.notify_all(entity, data)
 
     def clear(self):
         self.space = dict()
+        self.subscribers = dict()
 
     def get(self, entity):
         return self.space.get(entity, dict())
 
     def world(self):
         return self.space
+
+    def notify_all(self, entity, data):
+        for subscriber in self.subscribers:
+            self.subscribers[subscriber][entity] = data
+
+    # Credit - Abram Hindle - https://github.com/abramhindle/CMPUT404-AJAX-Slides/blob/master/ObserverExample/server.py
+
+    def add_subscriber(self, subscriber_id):
+        self.subscribers[subscriber_id] = dict()
+
+    def get_subscriber(self, subscriber_id):
+        try:
+            return self.subscribers[subscriber_id]
+        except KeyError:
+            self.add_subscriber(subscriber_id)
+            return self.subscribers[subscriber_id]
+
+    def clear_subscriber(self, subscriber_id):
+        self.subscribers[subscriber_id] = dict()
+
 
 # you can test your webservice from the commandline
 # curl -v   -H "Content-Type: application/json" -X PUT http://127.0.0.1:5000/entity/X -d '{"x":1,"y":1}'
@@ -82,28 +104,55 @@ def hello():
     return redirect(url_for('static', filename='index.html'))
 
 
+# @app.route("/registerUser", methods=['POST', 'PUT'])
+# def register():
+#     uuid = flask_post_json()
+#     print(uuid)
+#     '''Return something coherent here.. perhaps redirect to /static/index.html '''
+#     return uuid
+
+
 @app.route("/entity/<entity>", methods=['POST', 'PUT'])
 def update(entity):
+    data = flask_post_json()
+    print(data)
+    myWorld.set(entity, data)
+    # myWorld.update(entity, )
     '''update the entities via this interface'''
-    return None
+    return entity
 
 
 @app.route("/world", methods=['POST', 'GET'])
 def world():
     '''you should probably return the world here'''
-    return None
+    return flask.jsonify(myWorld.world())
 
 
 @app.route("/entity/<entity>")
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    v = myWorld.get(entity)
+    return flask.jsonify(v)
 
 
 @app.route("/clear", methods=['POST', 'GET'])
 def clear():
     myWorld.clear()
-    return myWorld
+    return flask.jsonify(myWorld.world())
+
+
+@app.route("/subscriber/<entity>", methods=['POST', 'PUT'])
+def add_subscriber(entity):
+    myWorld.add_subscriber(entity)
+    return flask.jsonify(dict())
+
+
+@app.route("/subscriber/<entity>")
+def get_subscriber(entity):
+    entity = entity.encode('utf-8')
+    v = myWorld.get_subscriber(entity)
+    myWorld.clear_subscriber(entity)
+    return flask.jsonify(v)
 
 
 if __name__ == "__main__":
