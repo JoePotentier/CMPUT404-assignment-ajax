@@ -82,16 +82,13 @@ class ServerTestCase(unittest.TestCase):
         r = self.app.post('/clear')
         self.assertTrue(r.status_code == 200, "Code not 200!")
         for key in self.world:
-            print(key)
             r = self.app.put(('/entity/%s' % key),
                              data=json.dumps(self.world[key]))
             self.assertTrue(r.status_code == 200, "Code not 200!")
             j = json.loads(utf8(r.data))
-            print('KEYS', j.keys())
             self.assertTrue(len(j.keys()) >= 3,
                             "JSON lacking keys! %s" % j.keys())
         r = self.app.get('/world')
-        # print(r.data)
         self.assertTrue(r.status_code == 200, "Code not 200!")
         newworld = json.loads(utf8(r.data))
         for key in self.world:
