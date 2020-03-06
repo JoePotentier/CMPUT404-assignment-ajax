@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 # Copyright 2013 Abram Hindle
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,8 +25,10 @@ import random
 BASEHOST = '127.0.0.1'
 BASEPORT = 5000
 
+
 def utf8(utf8bytes):
     return utf8bytes.decode("utf-8")
+
 
 class ServerTestCase(unittest.TestCase):
 
@@ -36,7 +38,7 @@ class ServerTestCase(unittest.TestCase):
 
     def tearDown(self):
         '''nothing'''
-        
+
     def testNothing(self):
         '''nothing'''
 
@@ -45,18 +47,18 @@ class ServerTestCase(unittest.TestCase):
         # a redirect is ok!
         self.assertTrue(r.status_code == 200 or
                         r.status_code == 301 or
-                        r.status_code == 302
-                        , "Code not 200!")
+                        r.status_code == 302, "Code not 200!")
         if (r.status_code == 200):
             self.assertTrue(len(r.data) > 5, "No data?")
 
     def testUpdate(self):
-        v = 'T'+str(random.randint(1,1000000))
+        v = 'T'+str(random.randint(1, 1000000))
         r = self.app.get(('/entity/%s' % v))
         self.assertTrue(r.status_code == 200, "Code not 200!")
-        self.assertTrue(json.dumps(json.loads(utf8(r.data))) == json.dumps(json.loads('{}')), "Not empty? %s" % utf8(r.data))
-        d = {'x':2, 'y':3}
-        r = self.app.put(('/entity/%s' % v),data=json.dumps(d))
+        self.assertTrue(json.dumps(json.loads(utf8(r.data))) == json.dumps(
+            json.loads('{}')), "Not empty? %s" % utf8(r.data))
+        d = {'x': 2, 'y': 3}
+        r = self.app.put(('/entity/%s' % v), data=json.dumps(d))
         self.assertTrue(r.status_code == 200, "PUT Code not 200!")
         rd = json.loads(utf8(r.data))
         for key in d:
@@ -65,15 +67,14 @@ class ServerTestCase(unittest.TestCase):
         self.assertTrue(r.status_code == 200, "Code not 200!")
         self.assertTrue(json.loads(utf8(r.data)) == d, "D != r.data")
 
-        
     def populateWorld(self):
         self.world = dict()
-        for i in range(1,20):
-            v = 'P'+str(random.randint(1,1000000))
-            x = random.randint(1,640)
-            y = random.randint(1,480)
-            c = random.choice(['red','green','blue'])
-            self.world[v] = {'x':x,'y':y,'colour':c}
+        for i in range(1, 20):
+            v = 'P'+str(random.randint(1, 1000000))
+            x = random.randint(1, 640)
+            y = random.randint(1, 480)
+            c = random.choice(['red', 'green', 'blue'])
+            self.world[v] = {'x': x, 'y': y, 'colour': c}
         return self.world
 
     def testWorld(self):
@@ -81,21 +82,21 @@ class ServerTestCase(unittest.TestCase):
         r = self.app.post('/clear')
         self.assertTrue(r.status_code == 200, "Code not 200!")
         for key in self.world:
+            print(key)
             r = self.app.put(('/entity/%s' % key),
                              data=json.dumps(self.world[key]))
             self.assertTrue(r.status_code == 200, "Code not 200!")
             j = json.loads(utf8(r.data))
-            self.assertTrue(len(j.keys()) >= 3,"JSON lacking keys! %s" % j.keys())
+            print('KEYS', j.keys())
+            self.assertTrue(len(j.keys()) >= 3,
+                            "JSON lacking keys! %s" % j.keys())
         r = self.app.get('/world')
+        # print(r.data)
         self.assertTrue(r.status_code == 200, "Code not 200!")
         newworld = json.loads(utf8(r.data))
         for key in self.world:
-            self.assertTrue(self.world[key]  == newworld[key], "Key %s" % key)
+            self.assertTrue(self.world[key] == newworld[key], "Key %s" % key)
 
-
-        
-        
-        
 
 if __name__ == '__main__':
     unittest.main()

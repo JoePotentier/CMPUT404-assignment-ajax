@@ -104,27 +104,18 @@ def hello():
     return redirect(url_for('static', filename='index.html'))
 
 
-# @app.route("/registerUser", methods=['POST', 'PUT'])
-# def register():
-#     uuid = flask_post_json()
-#     print(uuid)
-#     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-#     return uuid
-
-
 @app.route("/entity/<entity>", methods=['POST', 'PUT'])
 def update(entity):
     data = flask_post_json()
-    print(data)
     myWorld.set(entity, data)
-    # myWorld.update(entity, )
     '''update the entities via this interface'''
-    return entity
+    return flask.jsonify(data)
 
 
 @app.route("/world", methods=['POST', 'GET'])
 def world():
     '''you should probably return the world here'''
+    print(myWorld.world())
     return flask.jsonify(myWorld.world())
 
 
